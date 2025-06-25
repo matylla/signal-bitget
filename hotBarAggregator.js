@@ -70,7 +70,7 @@ export default class HotBarAggregator {
         c: buf.secClose,
         v: buf.secVol
       };
-      const key = `price:SEC:${sym}`;
+      const key = `bitget:secbar:${sym}`;
       this.redis
         .multi()
         .zadd(key, bar.t, JSON.stringify(bar))
@@ -104,7 +104,7 @@ export default class HotBarAggregator {
         c: buf.minClose,
         v: buf.minVol
       };
-      const mkey = `price:MIN:${sym}`;
+      const mkey = `bitget:minbar:${sym}`;
       this.redis
         .multi()
         .zadd(mkey, mbar.t, JSON.stringify(mbar))

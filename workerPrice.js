@@ -28,7 +28,7 @@ function realisedSigmaFromBars(bars) {
   return Math.sqrt(var_);
 }
 
-new Worker("price", async job => {
+new Worker("bitget_price", async job => {
   try {
     await processJob(job);
   } catch (err) {
@@ -46,7 +46,7 @@ async function processJob(job) {
   const endSec = startSec + 1800; // 30 minutes later
 
   // Fetch 1-second bars from Redis
-  const key = `price:SEC:${symbol.toLowerCase()}`;
+  const key = `bitget:secbar:${symbol.toLowerCase()}`;
   const rawBars = await redis.zrangebyscore(key, startSec, endSec);
   const bars = rawBars.map(str => JSON.parse(str));
 

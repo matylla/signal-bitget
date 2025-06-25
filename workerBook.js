@@ -12,7 +12,7 @@ import { ObjectId } from "mongodb";
  * Uses Bitget REST endpoint: /api/v2/spot/market/merge-depth?symbol=<symbol>&limit=5
  */
 
-new Worker("order", async job => {
+new Worker("bitget_order", async job => {
   const { symbol, id, tOffset } = job.data;
 
   try {

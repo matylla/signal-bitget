@@ -3,8 +3,8 @@ import mongo from "./mongo.js";
 import params from "./parameters.js";
 import CircularBuffer from "./circularBuffer.js";
 
-const priceQueue = new Queue("binance_price");
-const orderQueue = new Queue("binance_order");
+const priceQueue = new Queue("bitget_price");
+const orderQueue = new Queue("bitget_order");
 
 class SymbolMonitor {
     constructor(symbol, marketCapTier = "mid") {
@@ -101,39 +101,6 @@ class SymbolMonitor {
 
         this.db = null;
         this.collection = null;
-
-        this.reasons = {
-                    atrSlow: 0,
-                    maxAtr: 0,
-                    ticker24hrVolumeUsdt: 0,
-                    lastSignalTriggerTime: 0,
-                    bestBid: 0,
-                    spreadPct: 0,
-                    lastPrice: 0,
-                    isVolumeSpike: 0,
-                    priceAtLookback: 0,
-                    slopeZ: 0
-                };
-
-
-        setInterval(() => {
-            // console.log(this.reasons);
-        }, 5000);
-
-        // console.log(
-        //       `[DEBUG][CB-INIT] ${symbol}`,
-        //       "CircularBuffer proto:",
-        //       Object.getPrototypeOf(this.aggTrades),
-        //       "methods:",
-        //       Object.getOwnPropertyNames(Object.getPrototypeOf(this.aggTrades))
-        //     );
-
-        // this.aggTrades.add({test: true, ts: Date.now()});
-        // console.log(
-        //   `[DEBUG][CB-TEST] ${symbol}`,
-        //   "after one add, toArray() =>",
-        //   this.aggTrades.toArray()
-        // );
     }
 
     updateTimeCache(now = Date.now()) {
@@ -389,11 +356,6 @@ class SymbolMonitor {
     }
 
     addAggTrade(tradeData) {
-        // console.log(
-        //     `[DEBUG][ADD-TRADE] ${this.symbol} @ ${new Date(tradeData.E).toISOString()}` +
-        //     `  price=${tradeData.p} qty=${tradeData.q}`
-        //   );
-
         this.aggTrades.add({
             price: parseFloat(tradeData.p),
             quantity: parseFloat(tradeData.q),
@@ -402,13 +364,6 @@ class SymbolMonitor {
         });
 
         this.lastPrice = parseFloat(tradeData.p);
-
-        // const bufArr = this.aggTrades.toArray();
-  // console.log(
-  //   `[DEBUG][POST-ADD-BUF] ${this.symbol}` +
-  //   ` bufferSize=${bufArr.length}` +
-  //   ` recentEventTimes=[${bufArr.slice(-5).map(t => t.eventTime).join(",")}]`
-  // );
     }
 
     applyTickerUpdate(tickerData) {
@@ -433,18 +388,6 @@ class SymbolMonitor {
 
     performPeriodicCalculations() {
         const now = Date.now();
-
-
-        // if (this.symbol === "AVAXUSDT") {
-        //     const arr = this.aggTrades.toArray();
-        //     console.log(
-        //       `[DEBUG][BUFFER] ${this.symbol}` +
-        //       ` bufferSize=${arr.length}` +
-        //       ` firstEvt=${arr[0]?.eventTime}` +
-        //       ` lastEvt=${arr[arr.length - 1]?.eventTime}`
-        //     );
-        //   }
-
         const oneSecondAgo = now - 1000;
 
         let volume1s = 0;
@@ -501,19 +444,9 @@ class SymbolMonitor {
                 const prevClose = this.priceHistoryForATR.size > 0 ? this.priceHistoryForATR.getNewest().close : close;
                 const trueRange = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
 
-
-
-
                 // Initialize both ATRs if they are zero
                 if (this.atrFast === 0) this.atrFast = trueRange;
                 if (this.atrSlow === 0) this.atrSlow = trueRange;
-
-                // console.log(
-                //       `[DEBUG][ATR-BEFORE] ${this.symbol}` +
-                //       ` TR=${trueRange.toFixed(6)}` +
-                //       ` atrFast=${this.atrFast.toFixed(6)}` +
-                //       ` atrSlow=${this.atrSlow.toFixed(6)}`
-                //     );
 
                 // Update both fast and slow ATRs using their respective alphas
                 this.atrFast = (params.ATR_ALPHA * trueRange) + ((1 - params.ATR_ALPHA) * this.atrFast);
@@ -591,7 +524,12 @@ class SymbolMonitor {
     getAbsoluteVolumeFloor() {
         const secondsInDay = 24 * 60 * 60;
         const quarterSecondShare = this.ticker24hrVolumeUsdt / secondsInDay * 0.25;
-        return Math.max(800, quarterSecondShare);
+
+        const tierFloor = this.marketCapTier === "large" ? 600
+                         : this.marketCapTier === "mid"   ? 500
+                         : 400;
+
+        return Math.max(tierFloor, quarterSecondShare);
     }
 
     async checkSignal() {
@@ -744,7 +682,7 @@ class SymbolMonitor {
 
         const insert = await mongo.signals.insertOne(vector);
 
-        await priceQueue.add("binance_price", {
+        await priceQueue.add("bitget_price", {
             id: insert.insertedId.toString(),
             symbol: this.symbol,
             timestamp: vector.signalTimestampMs
@@ -754,7 +692,7 @@ class SymbolMonitor {
             delay: 31 * 60 * 1000
         });
 
-        await orderQueue.add("binance_orderbook", {
+        await orderQueue.add("bitget_orderbook", {
             id: insert.insertedId.toString(),
             symbol: this.symbol,
             tOffset: 3
@@ -764,7 +702,7 @@ class SymbolMonitor {
             delay: 3000
         });
 
-        await orderQueue.add("binance_orderbook", {
+        await orderQueue.add("bitget_orderbook", {
             id: insert.insertedId.toString(),
             symbol: this.symbol,
             tOffset: 10
@@ -774,7 +712,7 @@ class SymbolMonitor {
             delay: 10000
         });
 
-        await orderQueue.add("binance_ongorderbook", {
+        await orderQueue.add("bitget_ongorderbook", {
             id: insert.insertedId.toString(),
             symbol: this.symbol,
             tOffset: 30
