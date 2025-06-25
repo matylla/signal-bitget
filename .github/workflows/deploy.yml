@@ -42,4 +42,4 @@ jobs:
           npm install --production
 
           # Restart service
-          sudo systemctl restart signal-binance
+          sudo systemctl restart signal-bitget
