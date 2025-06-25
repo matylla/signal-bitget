@@ -541,39 +541,32 @@ class SymbolMonitor {
 
         // console.log(this.atrSlow);
         if (this.atrSlow === 0) {
-            this.reasons.atrSlow++;
             return null;
         }
 
         if (this.atrSlow / this.lastPrice > maxAtr) {
-            this.reasons.maxAtr++;
             return null;
         }
 
         if (this.ticker24hrVolumeUsdt < 750000) {
-            this.reasons.ticker24hrVolumeUsdt++;
             return null;
         }
 
         if (now - this.lastSignalTriggerTime < params.SIGNAL_COOLDOWN_MS) {
-            this.reasons.lastSignalTriggerTime++;
             return null;
         }
 
         if (this.bestBid === 0 || this.bestAsk === 0 || this.bestAsk <= this.bestBid) {
-            this.reasons.bestBid++;
             return null;
         }
 
         const spreadPct = (this.bestAsk - this.bestBid) / this.bestAsk;
 
         if (spreadPct > params.MAX_BID_ASK_SPREAD_PCT) {
-            this.reasons.spreadPct++;
             return null;
         }
 
         if (this.lastPrice === 0 || this.ewma5mVolumeBaseline === 0) {
-            this.reasons.lastPrice++;
             return null;
         }
 
@@ -595,14 +588,12 @@ class SymbolMonitor {
               this.current1sTradeCount >= params.MIN_TRADES_IN_1S;
 
         if (!isVolumeSpike) {
-            this.reasons.isVolumeSpike++;
             return null;
         }
 
         const priceAtLookback = this.getHistoricalPrice(now - params.PRICE_LOOKBACK_WINDOW_MS);
 
         if (priceAtLookback === null || this.lastPrice <= priceAtLookback) {
-            this.reasons.priceAtLookback++;
             return null;
         }
 
@@ -611,7 +602,6 @@ class SymbolMonitor {
         const slopeZ = this.priceSlopeSigma > 0 ? this.priceSlope / this.priceSlopeSigma : 0;
 
         if (slopeZ < params.PRICE_SLOPE_ZSCORE) {
-            this.reasons.slopeZ++;
             return null;
         }
 
