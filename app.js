@@ -34,7 +34,12 @@ import "./workerPrice.js";
       const message = JSON.parse(rawMessage);
       if (!message.stream || !message.data) return;
 
-      const [symbol, streamType] = message.stream.split("@");
+      // const [symbol, streamType] = message.stream.split("@");
+
+      const atPos = message.stream.indexOf("@");
+      const symbol = message.stream.slice(0, atPos);
+      const streamType = message.stream.slice(atPos + 1);   // e.g. "depth5@100ms"
+
       const data = message.data;
       const symbolUpper = symbol.toUpperCase();
 
