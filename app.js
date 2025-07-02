@@ -1,28 +1,24 @@
 import mongo from "./mongo.js";
-import IORedis from "ioredis";
-import BitgetWebsockets from "./websockets.js";
-import HotBarAggregator from "./hotBarAggregator.js";
-import SymbolMonitor from "./symbolMonitor.js";
-import params from "./parameters.js";
-import fetchBestPairs from "./pairSelector.js";
 
 (async () => {
     await mongo.connect();
-    console.log("MongoDB connected.");
 })();
+
+import IORedis from "ioredis";
+import BitgetWebsockets from "./websockets.js";
+import SymbolMonitor from "./symbolMonitor.js";
+import params from "./parameters.js";
+import fetchBestPairs from "./pairSelector.js";
+import { initPriceTape, handleTradeTick, shutdownPriceTape } from "./priceTape.js";
 
 import "./workerBook.js";
 import "./workerPrice.js";
 
+const redis = new IORedis({ maxRetriesPerRequest: null });
+
+initPriceTape(redis);
+
 (async () => {
-  const redisClient = new IORedis(process.env.REDIS_URL || {
-    host: "127.0.0.1",
-    port: 6379,
-  });
-
-  // Redis is initialized inside HotBarAggregator via mongo.redisConnection
-  const hotBarAgg = new HotBarAggregator({ redisClient: redisClient });
-
   const symbolMonitors = new Map();
   let bgStream;
   let signalCheckIntervalId;
@@ -43,21 +39,21 @@ import "./workerPrice.js";
       const data = message.data;
       const symbolUpper = symbol.toUpperCase();
 
-      // Feed the HotBarAggregator for later 1-s bars
-      if (streamType === "aggTrade") {
-        const price = parseFloat(data.p);
-        const qty   = parseFloat(data.q);
-        const volume = price * qty;
-        const ts = data.E;
-        hotBarAgg.processTrade(symbolUpper, price, volume, ts);
-      }
-
       const monitor = symbolMonitors.get(symbolUpper);
       if (!monitor) return;
+
+      let price, qty, volume, ts;
 
       switch (streamType) {
         case "aggTrade":
           monitor.addAggTrade(data);
+
+          price = parseFloat(data.p);
+          qty = parseFloat(data.q);
+          volume = price * qty;
+          ts = data.E;
+
+          handleTradeTick(symbolUpper, price, volume, ts);
           break;
         case "ticker":
           monitor.applyTickerUpdate(data);
@@ -129,6 +125,8 @@ import "./workerPrice.js";
     console.log("Shutdown complete.");
     process.exit(0);
   }
+
+  shutdownPriceTape();
 
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);

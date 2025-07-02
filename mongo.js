@@ -9,7 +9,7 @@ async function connect() {
         return;
     }
 
-    const client = await MongoClient.connect("mongodb://127.0.0.1:27017/bitget", {
+    const client = await MongoClient.connect("mongodb://127.0.0.1:27017/cryptana", {
         maxPoolSize: 10
     });
 
