@@ -8,7 +8,7 @@ const COINGECKO_API_URL = "https://api.coingecko.com/api/v3/coins/markets";
 const PAIRS_TO_SELECT = 150;
 const STABLECOIN_SYMBOLS = new Set([
   "USDC", "USDT", "BUSD", "DAI", "TUSD", "USDP", "FDUSD", "GUSD", "FRAX", "USDD",
-  "PYUSD", "PAXG", "USDE", "EURS", "USDX", "OUSD"
+  "PYUSD", "PAXG", "USDE", "EURS", "USDX", "OUSD", "S"
 ]);
 const MIN_24H_VOLUME = 1_000_000;    // $1M
 const MIN_MARKET_CAP = 50_000_000;   // $50M
