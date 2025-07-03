@@ -23,8 +23,6 @@ new Worker("bitget_order", async job => {
 
     const data = res.data.data || {};
 
-    console.log(data);
-
     const bids = data.bids?.slice(0, 5) || [];
     const asks = data.asks?.slice(0, 5) || [];
 
